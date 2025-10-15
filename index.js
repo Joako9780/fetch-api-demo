@@ -1,4 +1,3 @@
-// https://cdn.thesimpsonsapi.com/500
 const IMAGE_URL = 'https://cdn.thesimpsonsapi.com/500';
 /**
  * 
@@ -12,32 +11,85 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min; // El max y el min son inclusivos
 }
 
-const fetchCharacter = async (randomValue) => {  //id = 1 es un default value por si id no recibe ningun valor
-    const response = await fetch(`https://thesimpsonsapi.com/api/characters/${randomValue}`);  // String interpolation, con lo cual se puede escapar algo, y se pide que se resuelva a algo que puede ser resuelto en primitico
+function getUniqueRandomInts() {
+    const uniqueRandomIds = [];
+    while (uniqueRandomIds.length < 6) {
+        const id = getRandomInt(1, 20);
+        if (!uniqueRandomIds.includes(id)) {
+            uniqueRandomIds.push(id);
+        }
+    }
+    return uniqueRandomIds;
+}    
+
+const fetchCharacter = async (id = 1) => {  //id = 1 es un default value por si id no recibe ningun valor
+    const response = await fetch(`https://thesimpsonsapi.com/api/characters/${id}`);  // String interpolation, con lo cual se puede escapar algo, y se pide que se resuelva a algo que puede ser resuelto en primitico
     const character = await response.json();
     return character;  
 };
 
-// IIFE
+// IIFE Immediately Invoked Function Expression 
 (async () => {
+/*
     const character = await fetchCharacter(1);
+    const characterElement = document.querySelector("#character");
+    characterElement.textContent = JSON.stringify(character, null, 2); // El null y el 2 son para que se vea bonito el JSON, 2 es el nivel de indentacion
+*/
+
+    const imageElements = [
+        document.querySelector('#character-image1'),
+        document.querySelector('#character-image2'),
+        document.querySelector('#character-image3'),
+        document.querySelector('#character-image4'),
+        document.querySelector('#character-image5'),
+        document.querySelector('#character-image6')
+    ];
+
+    const nameElements = [
+        document.querySelector('#character-name1'),
+        document.querySelector('#character-name2'),
+        document.querySelector('#character-name3'),
+        document.querySelector('#character-name4'),
+        document.querySelector('#character-name5'),
+        document.querySelector('#character-name6')
+    ];
+
+    let uniqueRandomIds = getUniqueRandomInts();
+    const characters = await Promise.all(uniqueRandomIds.map(id => fetchCharacter(id)));
+    
+    characters.forEach((character, index) => {
+        imageElements[index].src = `${IMAGE_URL}${character.portrait_path}`;
+        imageElements[index].alt = character.name || 'Character Image';
+        if (nameElements[index]) nameElements[index].textContent = character.name || '';
+    });
+    // const imageElement = document.querySelector('#character-image');
+    // imageElement.src = `${IMAGE_URL}${character.portrait_path}`;
+
     // Ocultar el spinner
     const spinnerElement = document.querySelector(".loader");
     spinnerElement.style.display = 'none';
-    const characterElement = document.querySelector("#character");
-    characterElement.textContent = JSON.stringify(character, null, 2); // El null y el 2 son para que se vea bonito el JSON, 2 es el nivel de indentacion
-    const imageElement = document.querySelector('#character-image');
-    imageElement.src = `${IMAGE_URL}${character.portrait_path}`;
+
     const buttonElement = document.querySelector('#fetch-button');
     buttonElement.disabled = false; // Habilitar el boton
+
     buttonElement.addEventListener('click', async () => {
         buttonElement.disabled = true; // Deshabilitar el boton
         spinnerElement.style.display = 'block'; // Mostrar el spinner
-        let randomValue = getRandomInt(1, 20);
-        const character = await fetchCharacter(randomValue);
+        uniqueRandomIds = getUniqueRandomInts();
+
+        // Clear current images/names while loading
+        imageElements.forEach(img => { img.src = ''; img.alt = ''; });
+        nameElements.forEach(n => { if (n) n.textContent = ''; });
+
+        const characters = await Promise.all(uniqueRandomIds.map(id => fetchCharacter(id)));
+
+        characters.forEach((character, index) => {
+            imageElements[index].src = `${IMAGE_URL}${character.portrait_path}`;
+            imageElements[index].alt = character.name || 'Character Image';
+            if (nameElements[index]) nameElements[index].textContent = character.name || '';
+        });
+
         spinnerElement.style.display = 'none'; // Ocultar el spinner
-        characterElement.textContent = JSON.stringify(character, null, 2); // El null y el 2 son para que se vea bonito el JSON, 2 es el nivel de indentacion
-        imageElement.src = `${IMAGE_URL}${character.portrait_path}`;
         buttonElement.disabled = false; // Habilitar el boton
     });
 })();
